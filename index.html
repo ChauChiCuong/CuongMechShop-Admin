@@ -6,11 +6,8 @@
     <title>Admin User Management - Cuong Mech Shop</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Firebase App (the core Firebase SDK) -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <!-- Firebase Authentication -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-    <!-- Firebase Firestore -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
     <style>
         .password-field {
@@ -314,4 +311,4 @@
                         <td class="px-6 py-4 whitespace-nowrap">
                             <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
                                 ${user.role === 'admin' ? 'bg-purple-100 text-purple-800' : 
-                                  user.role ===
+                                  user.role === 'moderator' ? 'bg-blue
