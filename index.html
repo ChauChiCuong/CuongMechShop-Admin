@@ -7,6 +7,9 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        #deviceIdModal {
+            display: none;
+        }
         .password-field {
             position: relative;
         }
@@ -503,6 +506,50 @@
             saveUsersToStorage();
             renderUsers();
         }
+    </script>
+
+    <!-- Device ID Check Modal -->
+    <div id="deviceIdModal" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md">
+            <div class="p-4 border-b">
+                <h3 class="text-lg font-semibold text-red-600">Device Not Authorized</h3>
+            </div>
+            <div class="p-4">
+                <p class="text-gray-700 mb-4">This device is not authorized to access the admin panel.</p>
+                <p class="text-sm text-gray-500">Device ID: <span id="displayDeviceId" class="font-mono"></span></p>
+            </div>
+            <div class="p-4 border-t flex justify-center">
+                <button onclick="window.location.href='https://chauchicuong.github.io/CuongMechShop-forgotpassord/'" 
+                        class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+                    Contact Support
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Required device ID
+        const REQUIRED_DEVICE_ID = "4F4381C6-DED9-4675-870F-F83DFE86A8A9"; // Replace with your required device ID
+        
+        // Check device ID on load
+        document.addEventListener('DOMContentLoaded', () => {
+            const deviceId = localStorage.getItem('deviceId');
+            document.getElementById('displayDeviceId').textContent = deviceId;
+            
+            if (deviceId !== REQUIRED_DEVICE_ID) {
+                // Disable all interactive elements
+                document.querySelectorAll('button, input, select, a').forEach(el => {
+                    el.style.pointerEvents = 'none';
+                    el.style.opacity = '0.5';
+                });
+                
+                // Show the modal
+                document.getElementById('deviceIdModal').classList.remove('hidden');
+            } else {
+                // Hide the modal if ID matches
+                document.getElementById('deviceIdModal').classList.add('hidden');
+            }
+        });
     </script>
 </body>
 </html>
