@@ -3,9 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin User Management</title>
+    <title>Admin User Management - Cuong Mech Shop</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Firebase App (the core Firebase SDK) -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <!-- Firebase Authentication -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
     <style>
         .password-field {
             position: relative;
@@ -56,11 +61,11 @@
                         <h3 class="text-lg font-medium mb-4">Admin Login</h3>
                         <div class="mb-4">
                             <label for="loginUsername" class="block text-sm font-medium text-indigo-200 mb-1">Username</label>
-                            <input type="text" id="loginUsername" class="w-full px-3 py-2 bg-indigo-800 text-white border border-indigo-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500" value="NguyenVanA112" placeholder="Enter admin username">
+                            <input type="text" id="loginUsername" class="w-full px-3 py-2 bg-indigo-800 text-white border border-indigo-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500" placeholder="Enter admin username">
                         </div>
                         <div class="mb-4 password-field">
                             <label for="loginPassword" class="block text-sm font-medium text-indigo-200 mb-1">Password</label>
-                            <input type="password" id="loginPassword" class="w-full px-3 py-2 bg-indigo-800 text-white border border-indigo-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500" value="********" placeholder="Enter admin password">
+                            <input type="password" id="loginPassword" class="w-full px-3 py-2 bg-indigo-800 text-white border border-indigo-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500" placeholder="Enter admin password">
                             <span class="toggle-password" onclick="togglePasswordVisibility('loginPassword')">
                                 <i class="fas fa-eye"></i>
                             </span>
@@ -100,7 +105,6 @@
 
         <!-- Main Content -->
         <div class="flex-1 overflow-auto">
-            <!-- Header -->
             <header class="bg-white shadow-sm p-4 flex items-center justify-between">
                 <button id="mobileSidebarToggle" class="md:hidden text-gray-600">
                     <i class="fas fa-bars"></i>
@@ -117,11 +121,10 @@
                 </div>
             </header>
 
-            <!-- Content -->
             <main class="p-6">
                 <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
-                    <h2 class="text-2xl font-bold text-gray-800">User Management</h2>
-                    <button id="addUserBtn" class="mt-4 md:mt-0 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center hidden">
+                    <h2 class="text-2xl font-bold text-gray-800">User  Management</h2>
+                    <button id="addUser Btn" class="mt-4 md:mt-0 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center hidden">
                         <i class="fas fa-plus mr-2"></i> Add New User
                     </button>
                 </div>
@@ -241,165 +244,75 @@
         </div>
     </div>
 
-    <!-- Delete Confirmation Modal -->
-    <div id="deleteModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-md">
-            <div class="p-4 border-b">
-                <h3 class="text-lg font-semibold">Confirm Deletion</h3>
-            </div>
-            <div class="p-4">
-                <p>Are you sure you want to delete this user? This action cannot be undone.</p>
-            </div>
-            <div class="p-4 border-t flex justify-end space-x-3">
-                <button id="cancelDelete" class="px-4 py-2 border rounded-lg hover:bg-gray-100">Cancel</button>
-                <button id="confirmDelete" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">Delete</button>
-            </div>
-        </div>
-    </div>
-
     <script>
-        // DOM Elements
-        const sidebar = document.querySelector('.sidebar');
-        const sidebarToggle = document.getElementById('sidebarToggle');
-        const mobileSidebarToggle = document.getElementById('mobileSidebarToggle');
-        const userModal = document.getElementById('userModal');
-        const deleteModal = document.getElementById('deleteModal');
-        const addUserBtn = document.getElementById('addUserBtn');
-        const closeModal = document.getElementById('closeModal');
-        const cancelBtn = document.getElementById('cancelBtn');
-        const cancelDelete = document.getElementById('cancelDelete');
-        const confirmDelete = document.getElementById('confirmDelete');
-        const userForm = document.getElementById('userForm');
-        const userTableBody = document.getElementById('userTableBody');
-        const prevPageBtn = document.getElementById('prevPage');
-        const nextPageBtn = document.getElementById('nextPage');
-        const startItem = document.getElementById('startItem');
-        const endItem = document.getElementById('endItem');
-        const totalItems = document.getElementById('totalItems');
+        // Firebase config
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_AUTH_DOMAIN",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
 
-        // State
-        let currentPage = 1;
-        const itemsPerPage = 5;
-        let users = [];
-        let userToDelete = null;
-        let isLoggedIn = false;
-        let currentUserRole = '';
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
 
-        // Initialize
-        document.addEventListener('DOMContentLoaded', () => {
-            loadUsers();
-            setupEventListeners();
-        });
-
-        // Event Listeners
-        function setupEventListeners() {
-            // Sidebar toggle
-            mobileSidebarToggle.addEventListener('click', () => {
-                sidebar.classList.add('active');
-            });
-
-            sidebarToggle.addEventListener('click', () => {
-                sidebar.classList.remove('active');
-            });
-
-            // User modal
-            addUserBtn.addEventListener('click', () => {
-                document.getElementById('modalTitle').textContent = 'Add New User';
-                document.getElementById('userId').value = '';
-                userForm.reset();
-                document.getElementById('password').type = 'password';
-                document.querySelector('#password + .toggle-password i').classList.remove('fa-eye-slash');
-                document.querySelector('#password + .toggle-password i').classList.add('fa-eye');
-                userModal.classList.remove('hidden');
-            });
-
-            closeModal.addEventListener('click', () => {
-                userModal.classList.add('hidden');
-            });
-
-            cancelBtn.addEventListener('click', () => {
-                userModal.classList.add('hidden');
-            });
-
-            // Delete modal
-            cancelDelete.addEventListener('click', () => {
-                deleteModal.classList.add('hidden');
-            });
-
-            confirmDelete.addEventListener('click', () => {
-                if (userToDelete) {
-                    deleteUser(userToDelete);
-                    deleteModal.classList.add('hidden');
-                    userToDelete = null;
-                }
-            });
-
-            // Form submission
-            userForm.addEventListener('submit', (e) => {
-                e.preventDefault();
-                saveUser();
-            });
-
-            // Login
-            document.getElementById('loginBtn').addEventListener('click', () => {
-                const username = document.getElementById('loginUsername').value;
-                const password = document.getElementById('loginPassword').value;
-                
-                // Check if admin credentials match
-                const adminUser = users.find(u => u.username === username && u.password === password && (u.role === 'admin' || u.role === 'moderator'));
-                if (adminUser) {
-                    isLoggedIn = true;
-                    currentUserRole = adminUser.role;
-                    console.log('Logged in as:', currentUserRole); // Debug log
-                    document.getElementById('loginSection').classList.add('hidden');
-                    document.getElementById('userInfoSection').classList.remove('hidden');
-                    document.getElementById('adminMenu').classList.remove('hidden');
-                    document.getElementById('loggedInUsername').textContent = adminUser.username;
-                    
-                    // Only show add button for admin and re-render table
-                    if (currentUserRole === 'admin') {
-                        document.getElementById('addUserBtn').classList.remove('hidden');
-                    }
-                    renderUsers();
-                } else {
-                    alert('Invalid admin credentials');
-                }
-            });
-
-            // Logout
-            document.getElementById('logoutBtn').addEventListener('click', () => {
-                isLoggedIn = false;
-                document.getElementById('loginSection').classList.remove('hidden');
-                document.getElementById('userInfoSection').classList.add('hidden');
-                document.getElementById('adminMenu').classList.add('hidden');
-                document.getElementById('addUserBtn').classList.add('hidden');
-                document.getElementById('loginUsername').value = '';
-                document.getElementById('loginPassword').value = '';
-                renderUsers();
-            });
-
-            // Pagination
-            prevPageBtn.addEventListener('click', () => {
-                if (currentPage > 1) {
-                    currentPage--;
-                    renderUsers();
-                }
-            });
-
-            nextPageBtn.addEventListener('click', () => {
-                const totalPages = Math.ceil(users.length / itemsPerPage);
-                if (currentPage < totalPages) {
-                    currentPage++;
-                    renderUsers();
-                }
-            });
+        // Load users from localStorage
+        function loadUsers() {
+            const storedUsers = localStorage.getItem('admin_users');
+            if (storedUsers) {
+                users = JSON.parse(storedUsers);
+            } else {
+                users = [];
+            }
+            renderUsers();
         }
+
+        // Handle user management
+        document.getElementById("userForm").addEventListener("submit", async function (event) {
+            event.preventDefault();
+            const form = event.target;
+            const firstName = form.firstName.value.trim();
+            const lastName = form.lastName.value.trim();
+            const username = form.username.value.trim();
+            const email = form.email.value.trim();
+            const zaloPhone = form.zaloPhone.value.trim();
+            const currentRank = form.currentRank.value.trim();
+            const currentLevel = form.currentLevel.value.trim();
+            const password = form.password.value;
+            const role = form.role.value;
+            const status = form.status.value;
+
+            try {
+                const userCredential = await auth.createUser WithEmailAndPassword(email, password);
+                const user = userCredential.user;
+
+                // Save user data to Firestore
+                await db.collection('users').doc(user.uid).set({
+                    firstName,
+                    lastName,
+                    username,
+                    zaloPhone,
+                    currentRank,
+                    currentLevel,
+                    role,
+                    status
+                });
+
+                alert("User  created successfully!");
+                form.reset();
+            } catch (error) {
+                alert("Error creating user: " + error.message);
+            }
+        });
 
         // Toggle password visibility
         function togglePasswordVisibility(fieldId) {
             const field = document.getElementById(fieldId);
-            const icon = document.querySelector(`#${fieldId} + .toggle-password i, [onclick="togglePasswordVisibility('${fieldId}')"] i`);
-            
+            const icon = document.querySelector(`#${fieldId} + .toggle-password i`);
             if (field.type === 'password') {
                 field.type = 'text';
                 icon.classList.remove('fa-eye');
@@ -410,193 +323,6 @@
                 icon.classList.add('fa-eye');
             }
         }
-
-        // Load users from localStorage
-        function loadUsers() {
-            const storedUsers = localStorage.getItem('admin_users');
-            if (storedUsers) {
-                users = JSON.parse(storedUsers);
-            } else {
-                // Default admin user with secure password
-                users = [
-                    {
-                        id: 'admin001',
-                        firstName: 'Super',
-                        lastName: 'Admin',
-                        username: 'superadmin',
-                        email: 'superadmin@cuongmechshop.com',
-                        zaloPhone: '0987654321',
-                        currentRank: 'Super Admin',
-                        currentLevel: 100,
-                        password: 'Admin@123', // More secure password
-                        role: 'admin',
-                        status: 'active',
-                        createdAt: new Date().toISOString()
-                    }
-                ];
-                saveUsersToStorage();
-            }
-            renderUsers();
-        }
-
-        // Save users to localStorage
-        function saveUsersToStorage() {
-            localStorage.setItem('admin_users', JSON.stringify(users));
-        }
-
-        // Generate unique ID
-        function generateId() {
-            return Date.now().toString(36) + Math.random().toString(36).substr(2);
-        }
-
-        // Render users in table
-        function renderUsers() {
-            userTableBody.innerHTML = '';
-            
-            const startIndex = (currentPage - 1) * itemsPerPage;
-            const endIndex = Math.min(startIndex + itemsPerPage, users.length);
-            const paginatedUsers = users.slice(startIndex, endIndex);
-            
-            if (paginatedUsers.length === 0) {
-                userTableBody.innerHTML = `
-                    <tr>
-                        <td colspan="6" class="px-6 py-4 text-center text-gray-500">No users found</td>
-                    </tr>
-                `;
-            } else {
-                paginatedUsers.forEach(user => {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${user.id.substring(0, 8)}</td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm font-medium text-gray-900">${user.firstName || ''} ${user.lastName || ''}</div>
-                            <div class="text-sm text-gray-500">${user.username}</div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm text-gray-900">${user.zaloPhone || 'N/A'}</div>
-                            <div class="text-sm text-gray-500">${user.currentRank || 'N/A'} (Lv. ${user.currentLevel || '0'})</div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${user.email}</td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                ${user.role === 'admin' ? 'bg-purple-100 text-purple-800' : 
-                                  user.role === 'moderator' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}">
-                                ${user.role === 'player' ? 'Player' : user.role}
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                ${user.status === 'active' ? 'bg-green-100 text-green-800' : 
-                                  user.status === 'banned' ? 'bg-gray-100 text-gray-800' : 'bg-red-100 text-red-800'}">
-                                ${user.status}
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            ${isLoggedIn && currentUserRole === 'admin' ? `
-                                <button onclick="editUser('${user.id}')" class="text-indigo-600 hover:text-indigo-900 mr-3">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button onclick="confirmDeleteUser('${user.id}')" class="text-red-600 hover:text-red-900">
-                                    <i class="fas fa-trash-alt"></i>
-                                </button>
-                            ` : ''}
-                        </td>
-                    `;
-                    userTableBody.appendChild(row);
-                });
-            }
-            
-            // Update pagination info
-            startItem.textContent = startIndex + 1;
-            endItem.textContent = endIndex;
-            totalItems.textContent = users.length;
-            
-            // Enable/disable pagination buttons
-            prevPageBtn.disabled = currentPage === 1;
-            nextPageBtn.disabled = currentPage === Math.ceil(users.length / itemsPerPage);
-        }
-
-        // Save user (add or edit)
-        function saveUser() {
-            const userId = document.getElementById('userId').value;
-            const firstName = document.getElementById('firstName').value;
-            const lastName = document.getElementById('lastName').value;
-            const username = document.getElementById('username').value;
-            const email = document.getElementById('email').value;
-            const zaloPhone = document.getElementById('zaloPhone').value;
-            const currentRank = document.getElementById('currentRank').value;
-            const currentLevel = document.getElementById('currentLevel').value;
-            const password = document.getElementById('password').value;
-            const role = document.getElementById('role').value;
-            const status = document.querySelector('input[name="status"]:checked').value;
-            
-            if (userId) {
-                // Edit existing user
-                const index = users.findIndex(u => u.id === userId);
-                if (index !== -1) {
-                    users[index] = {
-                        ...users[index],
-                        username,
-                        email,
-                        password: password || users[index].password,
-                        role,
-                        status
-                    };
-                }
-            } else {
-                // Add new user
-                const newUser = {
-                    id: generateId(),
-                    username,
-                    email,
-                    password,
-                    role,
-                    status
-                };
-                users.push(newUser);
-            }
-            
-            saveUsersToStorage();
-            userModal.classList.add('hidden');
-            renderUsers();
-        }
-
-        // Edit user
-        function editUser(id) {
-            const user = users.find(u => u.id === id);
-            if (user) {
-                document.getElementById('modalTitle').textContent = 'Edit User';
-                document.getElementById('userId').value = user.id;
-                document.getElementById('firstName').value = user.firstName || '';
-                document.getElementById('lastName').value = user.lastName || '';
-                document.getElementById('username').value = user.username;
-                document.getElementById('email').value = user.email;
-                document.getElementById('zaloPhone').value = user.zaloPhone || '';
-                document.getElementById('currentRank').value = user.currentRank || '';
-                document.getElementById('currentLevel').value = user.currentLevel || '';
-                document.getElementById('password').value = user.password;
-                document.getElementById('password').type = 'text';
-                document.querySelector('#password + .toggle-password i').classList.remove('fa-eye');
-                document.querySelector('#password + .toggle-password i').classList.add('fa-eye-slash');
-                document.getElementById('role').value = user.role;
-                document.querySelector(`input[name="status"][value="${user.status}"]`).checked = true;
-                userModal.classList.remove('hidden');
-            }
-        }
-
-        // Confirm delete user
-        function confirmDeleteUser(id) {
-            userToDelete = id;
-            deleteModal.classList.remove('hidden');
-        }
-
-        // Delete user
-        function deleteUser(id) {
-            users = users.filter(u => u.id !== id);
-            saveUsersToStorage();
-            renderUsers();
-        }
     </script>
-
 </body>
 </html>
