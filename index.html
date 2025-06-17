@@ -125,7 +125,7 @@
             <main class="p-6">
                 <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
                     <h2 class="text-2xl font-bold text-gray-800">User  Management</h2>
-                    <button id="addUser Btn" class="mt-4 md:mt-0 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center hidden">
+                    <button id="addUser Btn" class="mt-4 md:mt-0 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center">
                         <i class="fas fa-plus mr-2"></i> Add New User
                     </button>
                 </div>
@@ -245,6 +245,22 @@
         </div>
     </div>
 
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md">
+            <div class="p-4 border-b">
+                <h3 class="text-lg font-semibold">Confirm Deletion</h3>
+            </div>
+            <div class="p-4">
+                <p>Are you sure you want to delete this user? This action cannot be undone.</p>
+            </div>
+            <div class="p-4 border-t flex justify-end space-x-3">
+                <button id="cancelDelete" class="px-4 py-2 border rounded-lg hover:bg-gray-100">Cancel</button>
+                <button id="confirmDelete" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">Delete</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Firebase config
         const firebaseConfig = {
@@ -298,24 +314,4 @@
                         <td class="px-6 py-4 whitespace-nowrap">
                             <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
                                 ${user.role === 'admin' ? 'bg-purple-100 text-purple-800' : 
-                                  user.role === 'moderator' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}">
-                                ${user.role === 'player' ? 'Player' : user.role}
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <button onclick="editUser ('${user.id}')" class="text-indigo-600 hover:text-indigo-900 mr-3">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button onclick="confirmDeleteUser ('${user.id}')" class="text-red-600 hover:text-red-900">
-                                <i class="fas fa-trash-alt"></i>
-                            </button>
-                        </td>
-                    `;
-                    userTableBody.appendChild(row);
-                });
-            }
-
-            // Update pagination info
-            document.getElementById('startItem').textContent = startIndex + 1;
-            document.getElementById('endItem').textContent = endIndex;
-            document
+                                  user.role ===
