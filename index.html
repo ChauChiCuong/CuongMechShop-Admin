@@ -10,6 +10,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <!-- Firebase Authentication -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <!-- Firebase Firestore -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
     <style>
         .password-field {
@@ -260,69 +261,61 @@
         const auth = firebase.auth();
         const db = firebase.firestore();
 
-        // Load users from localStorage
-        function loadUsers() {
-            const storedUsers = localStorage.getItem('admin_users');
-            if (storedUsers) {
-                users = JSON.parse(storedUsers);
-            } else {
-                users = [];
-            }
+        // Load users from Firestore
+        async function loadUsers() {
+            const snapshot = await db.collection('users').get();
+            users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             renderUsers();
         }
 
-        // Handle user management
-        document.getElementById("userForm").addEventListener("submit", async function (event) {
-            event.preventDefault();
-            const form = event.target;
-            const firstName = form.firstName.value.trim();
-            const lastName = form.lastName.value.trim();
-            const username = form.username.value.trim();
-            const email = form.email.value.trim();
-            const zaloPhone = form.zaloPhone.value.trim();
-            const currentRank = form.currentRank.value.trim();
-            const currentLevel = form.currentLevel.value.trim();
-            const password = form.password.value;
-            const role = form.role.value;
-            const status = form.status.value;
+        // Render users in table
+        function renderUsers() {
+            userTableBody.innerHTML = '';
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = Math.min(startIndex + itemsPerPage, users.length);
+            const paginatedUsers = users.slice(startIndex, endIndex);
 
-            try {
-                const userCredential = await auth.createUser WithEmailAndPassword(email, password);
-                const user = userCredential.user;
-
-                // Save user data to Firestore
-                await db.collection('users').doc(user.uid).set({
-                    firstName,
-                    lastName,
-                    username,
-                    zaloPhone,
-                    currentRank,
-                    currentLevel,
-                    role,
-                    status
-                });
-
-                alert("User  created successfully!");
-                form.reset();
-            } catch (error) {
-                alert("Error creating user: " + error.message);
-            }
-        });
-
-        // Toggle password visibility
-        function togglePasswordVisibility(fieldId) {
-            const field = document.getElementById(fieldId);
-            const icon = document.querySelector(`#${fieldId} + .toggle-password i`);
-            if (field.type === 'password') {
-                field.type = 'text';
-                icon.classList.remove('fa-eye');
-                icon.classList.add('fa-eye-slash');
+            if (paginatedUsers.length === 0) {
+                userTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="px-6 py-4 text-center text-gray-500">No users found</td>
+                    </tr>
+                `;
             } else {
-                field.type = 'password';
-                icon.classList.remove('fa-eye-slash');
-                icon.classList.add('fa-eye');
+                paginatedUsers.forEach(user => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${user.id.substring(0, 8)}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">${user.firstName || ''} ${user.lastName || ''}</div>
+                            <div class="text-sm text-gray-500">${user.username}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-900">${user.zaloPhone || 'N/A'}</div>
+                            <div class="text-sm text-gray-500">${user.currentRank || 'N/A'} (Lv. ${user.currentLevel || '0'})</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${user.email}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                ${user.role === 'admin' ? 'bg-purple-100 text-purple-800' : 
+                                  user.role === 'moderator' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}">
+                                ${user.role === 'player' ? 'Player' : user.role}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <button onclick="editUser ('${user.id}')" class="text-indigo-600 hover:text-indigo-900 mr-3">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="confirmDeleteUser ('${user.id}')" class="text-red-600 hover:text-red-900">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </td>
+                    `;
+                    userTableBody.appendChild(row);
+                });
             }
-        }
-    </script>
-</body>
-</html>
+
+            // Update pagination info
+            document.getElementById('startItem').textContent = startIndex + 1;
+            document.getElementById('endItem').textContent = endIndex;
+            document
