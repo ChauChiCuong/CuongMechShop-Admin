@@ -3,13 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin User Management - Cuong Mech Shop</title>
+    <title>Admin User Management</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
     <style>
+        #deviceIdModal {
+            display: none;
+            background-color: rgba(0, 0, 0, 0.9);
+        }
+        #userModal {
+            z-index: 100;
+        }
         .password-field {
             position: relative;
         }
@@ -23,6 +27,7 @@
         }
         .sidebar {
             transition: all 0.3s ease;
+            z-index: 90;
         }
         @media (max-width: 768px) {
             .sidebar {
@@ -54,48 +59,30 @@
                 </button>
             </div>
             <nav class="p-4">
-                <div id="loginSection" class="mb-6">
-                    <div class="p-4 bg-indigo-900 rounded-lg">
-                        <h3 class="text-lg font-medium mb-4">Admin Login</h3>
-                        <div class="mb-4">
-                            <label for="loginUsername" class="block text-sm font-medium text-indigo-200 mb-1">Username</label>
-                            <input type="text" id="loginUsername" class="w-full px-3 py-2 bg-indigo-800 text-white border border-indigo-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500" placeholder="Enter admin username">
+                <div class="mb-6">
+                    <form id="adminLoginForm" class="p-3 bg-indigo-900 rounded-lg">
+                        <div class="mb-3">
+                            <label class="block text-xs text-indigo-300 mb-1">Username</label>
+                            <input type="text" id="adminUsername" class="w-full px-3 py-2 text-sm rounded bg-indigo-800 text-white border border-indigo-700 focus:outline-none focus:ring-1 focus:ring-indigo-500" required>
                         </div>
-                        <div class="mb-4 password-field">
-                            <label for="loginPassword" class="block text-sm font-medium text-indigo-200 mb-1">Password</label>
-                            <input type="password" id="loginPassword" class="w-full px-3 py-2 bg-indigo-800 text-white border border-indigo-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500" placeholder="Enter admin password">
-                            <span class="toggle-password" onclick="togglePasswordVisibility('loginPassword')">
+                        <div class="mb-3 password-field">
+                            <label class="block text-xs text-indigo-300 mb-1">Password</label>
+                            <input type="password" id="adminPassword" class="w-full px-3 py-2 text-sm rounded bg-indigo-800 text-white border border-indigo-700 focus:outline-none focus:ring-1 focus:ring-indigo-500" required>
+                            <span class="toggle-password" onclick="togglePasswordVisibility('adminPassword')">
                                 <i class="fas fa-eye"></i>
                             </span>
                         </div>
-                        <button id="loginBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg">
-                            Login
+                        <button type="submit" class="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-sm font-medium">
+                            <i class="fas fa-sign-in-alt mr-2"></i> Login
                         </button>
-                    </div>
+                    </form>
                 </div>
-                <div id="userInfoSection" class="mb-6 hidden">
-                    <div class="flex items-center space-x-3 p-3 bg-indigo-900 rounded-lg">
-                        <div class="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center">
-                            <i class="fas fa-user-shield"></i>
-                        </div>
-                        <div>
-                            <p class="font-medium" id="loggedInUsername">Admin</p>
-                            <p class="text-xs text-indigo-300">Super Admin <span class="text-yellow-400">(Full Access)</span></p>
-                        </div>
-                    </div>
-                </div>
-                <ul id="adminMenu" class="hidden">
-                    <li class="mb-2">
+                <ul>
+                    <li>
                         <a href="#" class="flex items-center p-3 rounded-lg bg-indigo-900">
                             <i class="fas fa-users mr-3"></i>
                             <span>User Management</span>
                         </a>
-                    </li>
-                    <li>
-                        <button id="logoutBtn" class="w-full text-left flex items-center p-3 rounded-lg hover:bg-indigo-700">
-                            <i class="fas fa-sign-out-alt mr-3"></i>
-                            <span>Logout</span>
-                        </button>
                     </li>
                 </ul>
             </nav>
@@ -103,6 +90,7 @@
 
         <!-- Main Content -->
         <div class="flex-1 overflow-auto">
+            <!-- Header -->
             <header class="bg-white shadow-sm p-4 flex items-center justify-between">
                 <button id="mobileSidebarToggle" class="md:hidden text-gray-600">
                     <i class="fas fa-bars"></i>
@@ -119,10 +107,11 @@
                 </div>
             </header>
 
+            <!-- Content -->
             <main class="p-6">
                 <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
-                    <h2 class="text-2xl font-bold text-gray-800">User  Management</h2>
-                    <button id="addUser Btn" class="mt-4 md:mt-0 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center">
+                    <h2 class="text-2xl font-bold text-gray-800">User Management</h2>
+                    <button id="addUserBtn" class="mt-4 md:mt-0 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center">
                         <i class="fas fa-plus mr-2"></i> Add New User
                     </button>
                 </div>
@@ -163,16 +152,17 @@
         </div>
     </div>
 
+
     <!-- Add/Edit User Modal -->
-    <div id="userModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+    <div id="userModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center overflow-auto py-4 px-2 hidden">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-2">
             <div class="p-4 border-b flex justify-between items-center">
                 <h3 id="modalTitle" class="text-lg font-semibold">Add New User</h3>
                 <button id="closeModal" class="text-gray-500 hover:text-gray-700">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
-            <form id="userForm" class="p-4 pb-8">
+            <form id="userForm" class="p-4 overflow-y-auto max-h-[80vh]">
                 <input type="hidden" id="userId">
                 <div class="mb-4">
                     <label for="firstName" class="block text-sm font-medium text-gray-700 mb-1">Tên</label>
@@ -204,7 +194,7 @@
                 </div>
                 <div class="mb-4 password-field">
                     <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
-                    <input type="password" id="password" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                    <input type="password" id="password" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Current password (click eye to view)" required>
                     <span class="toggle-password" onclick="togglePasswordVisibility('password')">
                         <i class="fas fa-eye"></i>
                     </span>
@@ -259,35 +249,254 @@
     </div>
 
     <script>
-        // Firebase config
-        const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_AUTH_DOMAIN",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_STORAGE_BUCKET",
-            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-            appId: "YOUR_APP_ID"
-        };
+        // DOM Elements
+        const sidebar = document.querySelector('.sidebar');
+        const sidebarToggle = document.getElementById('sidebarToggle');
+        const mobileSidebarToggle = document.getElementById('mobileSidebarToggle');
+        const userModal = document.getElementById('userModal');
+        const deleteModal = document.getElementById('deleteModal');
+        const addUserBtn = document.getElementById('addUserBtn');
+        const closeModal = document.getElementById('closeModal');
+        const cancelBtn = document.getElementById('cancelBtn');
+        const cancelDelete = document.getElementById('cancelDelete');
+        const confirmDelete = document.getElementById('confirmDelete');
+        const userForm = document.getElementById('userForm');
+        const userTableBody = document.getElementById('userTableBody');
+        const prevPageBtn = document.getElementById('prevPage');
+        const nextPageBtn = document.getElementById('nextPage');
+        const startItem = document.getElementById('startItem');
+        const endItem = document.getElementById('endItem');
+        const totalItems = document.getElementById('totalItems');
 
-        // Initialize Firebase
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const db = firebase.firestore();
+        // State
+        let currentPage = 1;
+        const itemsPerPage = 5;
+        let users = [];
+        let userToDelete = null;
 
-        // Load users from Firestore
-        async function loadUsers() {
-            const snapshot = await db.collection('users').get();
-            users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        // Admin login state
+        let isAdminLoggedIn = false;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadUsers();
+            setupEventListeners();
+            
+            // Check if admin is already logged in
+            if (localStorage.getItem('adminLoggedIn') === 'true') {
+                isAdminLoggedIn = true;
+                updateAdminUI();
+            }
+        });
+
+        // Update UI based on login state
+        function updateAdminUI() {
+            const loginForm = document.getElementById('adminLoginForm');
+            const userManagementLink = document.querySelector('nav ul li:first-child a');
+            
+            if (isAdminLoggedIn) {
+                loginForm.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center">
+                            <i class="fas fa-user-shield"></i>
+                        </div>
+                        <div>
+                            <p class="font-medium">Admin</p>
+                            <p class="text-xs text-indigo-300">Super Admin</p>
+                        </div>
+                    </div>
+                    <button type="button" onclick="adminLogout()" class="w-full mt-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded text-sm font-medium">
+                        <i class="fas fa-sign-out-alt mr-2"></i> Logout
+                    </button>
+                `;
+                userManagementLink.classList.remove('hover:bg-indigo-700');
+                userManagementLink.classList.add('bg-indigo-900');
+            } else {
+                loginForm.innerHTML = `
+                    <div class="mb-3">
+                        <label class="block text-xs text-indigo-300 mb-1">Username</label>
+                        <input type="text" id="adminUsername" class="w-full px-3 py-2 text-sm rounded bg-indigo-800 text-white border border-indigo-700 focus:outline-none focus:ring-1 focus:ring-indigo-500" required>
+                    </div>
+                    <div class="mb-3 password-field">
+                        <label class="block text-xs text-indigo-300 mb-1">Password</label>
+                        <input type="password" id="adminPassword" class="w-full px-3 py-2 text-sm rounded bg-indigo-800 text-white border border-indigo-700 focus:outline-none focus:ring-1 focus:ring-indigo-500" required>
+                        <span class="toggle-password" onclick="togglePasswordVisibility('adminPassword')">
+                            <i class="fas fa-eye"></i>
+                        </span>
+                    </div>
+                    <button type="submit" class="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-sm font-medium">
+                        <i class="fas fa-sign-in-alt mr-2"></i> Login
+                    </button>
+                `;
+                userManagementLink.classList.remove('bg-indigo-900');
+                userManagementLink.classList.add('hover:bg-indigo-700');
+                document.getElementById('adminLoginForm').addEventListener('submit', handleAdminLogin);
+            }
+        }
+
+        // Admin login
+        function handleAdminLogin(e) {
+            e.preventDefault();
+            const username = document.getElementById('adminUsername').value;
+            const password = document.getElementById('adminPassword').value;
+            
+            // Check against stored admin users
+            const adminUser = users.find(user => 
+                user.username === username && 
+                user.password === password && 
+                (user.role === 'admin' || user.role === 'moderator')
+            );
+            
+            if (adminUser) {
+                isAdminLoggedIn = true;
+                localStorage.setItem('adminLoggedIn', 'true');
+                updateAdminUI();
+                loadUsers();
+            } else {
+                alert('Invalid admin credentials or insufficient privileges');
+            }
+        }
+
+        // Admin logout
+        function adminLogout() {
+            isAdminLoggedIn = false;
+            localStorage.removeItem('adminLoggedIn');
+            updateAdminUI();
+            loadUsers();
+            
+            // Reset login form
+            document.getElementById('adminLoginForm').innerHTML = `
+                <div class="mb-3">
+                    <label class="block text-xs text-indigo-300 mb-1">Username</label>
+                    <input type="text" id="adminUsername" class="w-full px-3 py-2 text-sm rounded bg-indigo-800 text-white border border-indigo-700 focus:outline-none focus:ring-1 focus:ring-indigo-500" required>
+                </div>
+                <div class="mb-3 password-field">
+                    <label class="block text-xs text-indigo-300 mb-1">Password</label>
+                    <input type="password" id="adminPassword" class="w-full px-3 py-2 text-sm rounded bg-indigo-800 text-white border border-indigo-700 focus:outline-none focus:ring-1 focus:ring-indigo-500" required>
+                    <span class="toggle-password" onclick="togglePasswordVisibility('adminPassword')">
+                        <i class="fas fa-eye"></i>
+                    </span>
+                </div>
+                <button type="submit" class="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-sm font-medium">
+                    <i class="fas fa-sign-in-alt mr-2"></i> Login
+                </button>
+            `;
+            
+            // Reattach login event listener
+            document.getElementById('adminLoginForm').addEventListener('submit', handleAdminLogin);
+        }
+
+        // Event Listeners
+        function setupEventListeners() {
+            // Admin login form
+            document.getElementById('adminLoginForm').addEventListener('submit', handleAdminLogin);
+            // Sidebar toggle
+            mobileSidebarToggle.addEventListener('click', () => {
+                sidebar.classList.add('active');
+            });
+
+            sidebarToggle.addEventListener('click', () => {
+                sidebar.classList.remove('active');
+            });
+
+            // User modal
+            addUserBtn.addEventListener('click', () => {
+                document.getElementById('modalTitle').textContent = 'Add New User';
+                document.getElementById('userId').value = '';
+                userForm.reset();
+                userModal.classList.remove('hidden');
+            });
+
+            closeModal.addEventListener('click', () => {
+                userModal.classList.add('hidden');
+            });
+
+            cancelBtn.addEventListener('click', () => {
+                userModal.classList.add('hidden');
+            });
+
+            // Delete modal
+            cancelDelete.addEventListener('click', () => {
+                deleteModal.classList.add('hidden');
+            });
+
+            confirmDelete.addEventListener('click', () => {
+                if (userToDelete) {
+                    deleteUser(userToDelete);
+                    deleteModal.classList.add('hidden');
+                    userToDelete = null;
+                }
+            });
+
+            // Form submission
+            userForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                saveUser();
+            });
+
+            // Pagination
+            prevPageBtn.addEventListener('click', () => {
+                if (currentPage > 1) {
+                    currentPage--;
+                    renderUsers();
+                }
+            });
+
+            nextPageBtn.addEventListener('click', () => {
+                const totalPages = Math.ceil(users.length / itemsPerPage);
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    renderUsers();
+                }
+            });
+        }
+
+        // Toggle password visibility
+        function togglePasswordVisibility(fieldId) {
+            const field = document.getElementById(fieldId);
+            const icon = document.querySelector(`#${fieldId} + .toggle-password i`);
+            
+            if (field.type === 'password') {
+                field.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                field.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+
+        // Load users from localStorage
+        function loadUsers() {
+            const storedUsers = localStorage.getItem('admin_users');
+            if (storedUsers) {
+                users = JSON.parse(storedUsers);
+            } else {
+                users = [];
+                saveUsersToStorage();
+            }
             renderUsers();
+        }
+
+        // Save users to localStorage
+        function saveUsersToStorage() {
+            localStorage.setItem('admin_users', JSON.stringify(users));
+        }
+
+        // Generate unique ID
+        function generateId() {
+            return Date.now().toString(36) + Math.random().toString(36).substr(2);
         }
 
         // Render users in table
         function renderUsers() {
             userTableBody.innerHTML = '';
+            
             const startIndex = (currentPage - 1) * itemsPerPage;
             const endIndex = Math.min(startIndex + itemsPerPage, users.length);
             const paginatedUsers = users.slice(startIndex, endIndex);
-
+            
             if (paginatedUsers.length === 0) {
                 userTableBody.innerHTML = `
                     <tr>
@@ -311,4 +520,124 @@
                         <td class="px-6 py-4 whitespace-nowrap">
                             <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
                                 ${user.role === 'admin' ? 'bg-purple-100 text-purple-800' : 
-                                  user.role === 'moderator' ? 'bg-blue
+                                  user.role === 'moderator' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}">
+                                ${user.role === 'player' ? 'Player' : user.role}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                ${user.status === 'active' ? 'bg-green-100 text-green-800' : 
+                                  user.status === 'banned' ? 'bg-gray-100 text-gray-800' : 'bg-red-100 text-red-800'}">
+                                ${user.status}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <button onclick="editUser('${user.id}')" class="text-indigo-600 hover:text-indigo-900 mr-3">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="confirmDeleteUser('${user.id}')" class="text-red-600 hover:text-red-900">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </td>
+                    `;
+                    userTableBody.appendChild(row);
+                });
+            }
+            
+            // Update pagination info
+            startItem.textContent = startIndex + 1;
+            endItem.textContent = endIndex;
+            totalItems.textContent = users.length;
+            
+            // Enable/disable pagination buttons
+            prevPageBtn.disabled = currentPage === 1;
+            nextPageBtn.disabled = currentPage === Math.ceil(users.length / itemsPerPage);
+        }
+
+        // Save user (add or edit)
+        function saveUser() {
+            const userId = document.getElementById('userId').value;
+            const firstName = document.getElementById('firstName').value;
+            const lastName = document.getElementById('lastName').value;
+            const username = document.getElementById('username').value;
+            const email = document.getElementById('email').value;
+            const zaloPhone = document.getElementById('zaloPhone').value;
+            const currentRank = document.getElementById('currentRank').value;
+            const currentLevel = document.getElementById('currentLevel').value;
+            const password = document.getElementById('password').value;
+            const role = document.getElementById('role').value;
+            const status = document.querySelector('input[name="status"]:checked').value;
+            
+            if (userId) {
+                // Edit existing user
+                const index = users.findIndex(u => u.id === userId);
+                if (index !== -1) {
+                    users[index] = {
+                        ...users[index],
+                        username,
+                        email,
+                        password: password !== user.password ? password : users[index].password,
+                        role,
+                        status
+                    };
+                }
+            } else {
+                // Add new user
+                const newUser = {
+                    id: generateId(),
+                    username,
+                    email,
+                    password,
+                    role,
+                    status
+                };
+                users.push(newUser);
+            }
+            
+            saveUsersToStorage();
+            userModal.classList.add('hidden');
+            renderUsers();
+        }
+
+        // Edit user
+        function editUser(id) {
+            const user = users.find(u => u.id === id);
+            if (user) {
+                // Close sidebar on mobile
+                sidebar.classList.remove('active');
+                document.getElementById('modalTitle').textContent = 'Edit User';
+                document.getElementById('userId').value = user.id;
+                document.getElementById('firstName').value = user.firstName || '';
+                document.getElementById('lastName').value = user.lastName || '';
+                document.getElementById('username').value = user.username;
+                document.getElementById('email').value = user.email;
+                document.getElementById('zaloPhone').value = user.zaloPhone || '';
+                document.getElementById('currentRank').value = user.currentRank || '';
+                document.getElementById('currentLevel').value = user.currentLevel || '';
+                document.getElementById('password').value = user.password;
+                document.getElementById('password').type = 'password'; // Ensure it's masked by default
+                document.getElementById('role').value = user.role;
+                document.querySelector(`input[name="status"][value="${user.status}"]`).checked = true;
+                userModal.classList.remove('hidden');
+            }
+        }
+
+        // Confirm delete user
+        function confirmDeleteUser(id) {
+            // Close sidebar on mobile
+            sidebar.classList.remove('active');
+            userToDelete = id;
+            deleteModal.classList.remove('hidden');
+        }
+
+        // Delete user
+        function deleteUser(id) {
+            users = users.filter(u => u.id !== id);
+            saveUsersToStorage();
+            renderUsers();
+        }
+    </script>
+
+
+</body>
+</html>
