@@ -1,722 +1,777 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin User Management</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        #deviceIdModal {
-            display: none;
-            background-color: rgba(0, 0, 0, 0.9);
-        }
-        #userModal {
-            z-index: 100;
-        }
-        .password-field {
-            position: relative;
-        }
-        .toggle-password {
-            position: absolute;
-            right: 10px;
-            top: 50%;
-            transform: translateY(-50%);
-            cursor: pointer;
-            color: #6b7280;
-        }
-        .sidebar {
-            transition: all 0.3s ease;
-            z-index: 90;
-        }
-        @media (max-width: 768px) {
-            .sidebar {
-                position: fixed;
-                left: -100%;
-                z-index: 50;
-            }
-            .sidebar.active {
-                left: 0;
-            }
-        }
-    </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Admin Panel - Quản lý người dùng</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+<style>
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: #2563eb;
+    border-radius: 4px;
+  }
+  /* Sidebar */
+  .sidebar {
+    width: 280px;
+    background: linear-gradient(135deg, #1e40af, #2563eb);
+    color: white;
+    position: fixed;
+    top: 0; bottom: 0; left: 0;
+    padding-top: 64px;
+    transition: left 0.3s ease;
+    z-index: 100;
+    overflow-y: auto;
+  }
+  .sidebar.collapsed {
+    left: -280px;
+  }
+  .sidebar a {
+    display: flex;
+    align-items: center;
+    padding: 12px 24px;
+    font-weight: 600;
+    color: white;
+    transition: background-color 0.3s ease;
+  }
+  .sidebar a:hover, .sidebar a.active {
+    background-color: #3b82f6;
+  }
+  .sidebar .material-icons {
+    margin-right: 16px;
+  }
+
+  /* Header */
+  header {
+    height: 64px;
+    padding: 0 24px;
+    background: rgba(255 255 255 / 0.3);
+    backdrop-filter: blur(16px);
+    position: fixed;
+    top: 0; left: 280px; right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    z-index: 200;
+    box-shadow: 0 1px 4px rgb(0 0 0 / 0.1);
+  }
+  header.collapsed {
+    left: 0;
+  }
+  header .brand {
+    font-weight: 700;
+    font-size: 1.25rem;
+    color: #1e40af;
+  }
+
+  /* Main content */
+  main {
+    margin-top: 64px;
+    margin-left: 280px;
+    padding: 24px;
+    transition: margin-left 0.3s ease;
+  }
+  main.collapsed {
+    margin-left: 0;
+  }
+
+  /* Table */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+  }
+  thead tr {
+    background: #3b82f6;
+    color: white;
+  }
+  th, td {
+    text-align: left;
+    padding: 12px 16px;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  tbody tr:hover {
+    background: #eff6ff;
+  }
+  .action-btn {
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: background-color 0.2s ease;
+  }
+  .action-btn.edit {
+    color: #2563eb;
+  }
+  .action-btn.edit:hover {
+    background-color: #dbeafe;
+  }
+  .action-btn.delete {
+    color: #dc2626;
+  }
+  .action-btn.delete:hover {
+    background-color: #fee2e2;
+  }
+
+  /* Toggle sidebar button */
+  #toggleSidebarBtn {
+    cursor: pointer;
+    font-size: 28px;
+    color: #1e40af;
+  }
+
+  /* Modal backdrop */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 500;
+  }
+  .modal-backdrop.active {
+    display: flex;
+  }
+
+  /* Modal */
+  .modal {
+    background: white;
+    border-radius: 12px;
+    max-width: 480px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 40px rgb(59 130 246 / 0.5);
+    padding: 24px;
+    position: relative;
+  }
+  .modal header {
+    font-weight: 700;
+    font-size: 1.25rem;
+    color: #1e40af;
+    margin-bottom: 16px;
+  }
+  .modal .close-btn {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    font-size: 28px;
+    cursor: pointer;
+    color: #2563eb;
+    transition: color 0.2s ease;
+  }
+  .modal .close-btn:hover {
+    color: #1e40af;
+  }
+
+  /* Form inside modal */
+  form label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 600;
+    color: #1e40af;
+  }
+  form input[type="text"],
+  form input[type="number"],
+  form input[type="email"],
+  form input[type="password"],
+  form select,
+  form input[type="date"] {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1.5px solid #3b82f6;
+    border-radius: 8px;
+    font-size: 1rem;
+    color: #1e40af;
+    margin-bottom: 16px;
+    transition: border-color 0.3s ease;
+  }
+  form input:focus,
+  form select:focus {
+    border-color: #60a5fa;
+    outline: none;
+    box-shadow: 0 0 6px rgba(96, 165, 250, 0.7);
+  }
+  form .password-toggle {
+    position: absolute;
+    right: 16px;
+    top: 38px;
+    color: #2563eb;
+    cursor: pointer;
+    user-select: none;
+  }
+  form .password-container {
+    position: relative;
+  }
+
+  form .btn-group {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 24px;
+  }
+  form button {
+    padding: 10px 20px;
+    border-radius: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  form button.cancel-btn {
+    background: #dc2626;
+    color: white;
+  }
+  form button.cancel-btn:hover {
+    background: #b91c1c;
+  }
+  form button.save-btn {
+    background: #2563eb;
+    color: white;
+  }
+  form button.save-btn:hover {
+    background: #1e40af;
+  }
+
+  /* Pagination */
+  .pagination {
+    margin-top: 24px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+  .pagination button {
+    padding: 8px 14px;
+    border: 1.5px solid #2563eb;
+    border-radius: 6px;
+    background: white;
+    color: #2563eb;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+  }
+  .pagination button:hover:not(:disabled) {
+    background: #dbeafe;
+  }
+  .pagination button:disabled {
+    cursor: not-allowed;
+    opacity: 0.4;
+  }
+
+  /* Login overlay */
+  .login-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.9);
+    z-index: 9999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  /* Toast notification */
+  #toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: #2563eb;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(37, 99, 235, 0.7);
+    opacity: 0;
+    transform: translateY(40px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    z-index: 999;
+    pointer-events: none;
+  }
+  #toast.show {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+</style>
 </head>
 <body class="bg-gray-100 font-sans">
-    <div class="flex h-screen overflow-hidden">
-        <!-- Sidebar -->
-        <div class="sidebar bg-indigo-800 text-white w-64 flex-shrink-0">
-            <div class="p-4 flex items-center justify-between border-b border-indigo-700">
-                <div class="flex flex-col">
-                    <h1 class="text-xl font-bold">
-                        <a href="https://chauchicuong.github.io/CuongMechShop/" target="_blank" class="hover:underline">
-                            <span class="text-white">Cuong</span>
-                            <span class="text-cyan-400">Mech</span>
-                            <span class="text-orange-500">Shop</span>
-                        </a>
-                    </h1>
-                    <p class="text-sm text-gray-300">Admin Panel</p>
-                </div>
-                <button id="sidebarToggle" class="md:hidden text-white">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <nav class="p-4">
-                <div class="mb-6">
-                    <form id="adminLoginForm" class="p-3 bg-indigo-900 rounded-lg">
-                        <div class="mb-3">
-                            <label class="block text-xs text-indigo-300 mb-1">Username</label>
-                            <input type="text" id="adminUsername" class="w-full px-3 py-2 text-sm rounded bg-indigo-800 text-white border border-indigo-700 focus:outline-none focus:ring-1 focus:ring-indigo-500" required>
-                        </div>
-                        <div class="mb-3 password-field">
-                            <label class="block text-xs text-indigo-300 mb-1">Password</label>
-                            <input type="password" id="adminPassword" class="w-full px-3 py-2 text-sm rounded bg-indigo-800 text-white border border-indigo-700 focus:outline-none focus:ring-1 focus:ring-indigo-500" required>
-                            <span class="toggle-password" onclick="togglePasswordVisibility('adminPassword')">
-                                <i class="fas fa-eye"></i>
-                            </span>
-                        </div>
-                        <button type="submit" class="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-sm font-medium">
-                            <i class="fas fa-sign-in-alt mr-2"></i> Login
-                        </button>
-                    </form>
-                </div>
-                <ul>
-                    <li>
-                        <a href="#" class="flex items-center p-3 rounded-lg bg-indigo-900">
-                            <i class="fas fa-users mr-3"></i>
-                            <span>User Management</span>
-                        </a>
-                    </li>
-                </ul>
-            </nav>
-        </div>
 
-        <!-- Main Content -->
-        <div class="flex-1 overflow-auto">
-            <!-- Header -->
-            <header class="bg-white shadow-sm p-4 flex items-center justify-between">
-                <button id="mobileSidebarToggle" class="md:hidden text-gray-600">
-                    <i class="fas fa-bars"></i>
-                </button>
-                <div class="flex items-center space-x-4">
-                    <div class="relative">
-                        <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                        <input type="text" placeholder="Search..." class="pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                    </div>
-                    <div class="relative">
-                        <i class="fas fa-bell text-gray-600 cursor-pointer"></i>
-                        <span class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-white text-xs flex items-center justify-center">3</span>
-                    </div>
-                </div>
-            </header>
+<!-- Sidebar -->
+<nav id="sidebar" class="sidebar" aria-label="Navigation Sidebar">
+  <div class="px-6 py-4 font-bold text-xl select-none">Cuong Mech Admin</div>
+  <a href="#" class="active" aria-current="page">
+    <span class="material-icons" aria-hidden="true">people</span> Quản lý người dùng
+  </a>
+  <!-- Add more sidebar links as needed -->
+  <button id="logoutBtn" class="mt-auto w-full py-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-b-lg">
+    <span class="material-icons align-middle">logout</span> Đăng xuất
+  </button>
+</nav>
 
-            <!-- Content -->
-            <main class="p-6">
-                <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
-                    <h2 class="text-2xl font-bold text-gray-800">User Management</h2>
-                    <button id="addUserBtn" class="mt-4 md:mt-0 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center hidden">
-                        <i class="fas fa-plus mr-2"></i> Add New User
-                    </button>
-                </div>
+<!-- Header -->
+<header id="header" class="">
+  <span id="toggleSidebarBtn" class="material-icons" aria-label="Toggle Sidebar" role="button" tabindex="0" 
+        title="Ẩn/Hiện menu điều hướng">menu</span>
+  <div class="brand">Cuong Mech Shop - Admin Panel</div>
+  <div id="adminUserInfo" class="font-semibold text-blue-700"></div>
+</header>
 
-                <!-- User Table -->
-                <div class="bg-white rounded-lg shadow overflow-hidden">
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Device ID</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">VIP</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Username</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Info</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="userTableBody" class="bg-white divide-y divide-gray-200">
-                                <!-- Users will be loaded here -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+<!-- Main Content -->
+<main id="mainContent">
+  <!-- Toolbar -->
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-3xl font-bold text-gray-900 select-none">Quản lý người dùng</h1>
+    <button id="addUserBtn" class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg font-semibold flex items-center gap-2 transition">
+      <span class="material-icons">add</span> Thêm người dùng mới
+    </button>
+  </div>
 
-                <!-- Pagination -->
-                <div class="flex items-center justify-between mt-4">
-                    <div class="text-sm text-gray-500">
-                        Showing <span id="startItem">1</span> to <span id="endItem">10</span> of <span id="totalItems">0</span> users
-                    </div>
-                    <div class="flex space-x-2">
-                        <button id="prevPage" class="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50" disabled>Previous</button>
-                        <button id="nextPage" class="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50" disabled>Next</button>
-                    </div>
-                </div>
-            </main>
-        </div>
+  <!-- Search -->
+  <input id="searchInput" type="search" placeholder="Tìm kiếm theo tên, username, email..." 
+         class="w-full max-w-md mb-4 p-3 border border-blue-300 rounded-lg outline-none transition focus:border-blue-600" />
+
+  <!-- Users Table -->
+  <div class="overflow-auto rounded-lg shadow border border-blue-200 bg-white">
+    <table role="grid" aria-label="Danh sách người dùng" class="min-w-full divide-y divide-blue-200">
+      <thead class="bg-blue-600 text-white select-none">
+        <tr>
+          <th class="p-3 text-left" scope="col">ID</th>
+          <th class="p-3 text-left" scope="col">Device ID</th>
+          <th class="p-3 text-center" scope="col">VIP</th>
+          <th class="p-3 text-left" scope="col">Họ & Tên / Username</th>
+          <th class="p-3 text-left" scope="col">Thông tin Zalo / Rank</th>
+          <th class="p-3 text-left" scope="col">Email</th>
+          <th class="p-3 text-left" scope="col">Role</th>
+          <th class="p-3 text-left" scope="col">Trạng thái</th>
+          <th class="p-3 text-center" scope="col">Hành động</th>
+        </tr>
+      </thead>
+      <tbody id="userTableBody" class="divide-y divide-blue-100"></tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  <div class="pagination mt-6">
+    <button id="prevPageBtn" disabled aria-label="Trang trước">Trước</button>
+    <button id="nextPageBtn" disabled aria-label="Trang tiếp theo">Sau</button>
+  </div>
+</main>
+
+<!-- Modal Thêm/Sửa Người Dùng -->
+<div id="userModalBackdrop" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+  <div class="modal">
+    <header id="modalTitle">Thêm người dùng mới</header>
+    <button class="close-btn" aria-label="Đóng modal" id="closeUserModalBtn">&times;</button>
+    <form id="userForm" novalidate>
+      <input type="hidden" id="userId" />
+      <label for="deviceId">Device ID</label>
+      <input type="text" id="deviceId" name="deviceId" autocomplete="off" />
+
+      <label for="firstName">Họ</label>
+      <input type="text" id="firstName" name="firstName" required autocomplete="off" />
+
+      <label for="lastName">Tên</label>
+      <input type="text" id="lastName" name="lastName" required autocomplete="off" />
+
+      <label for="username">Username</label>
+      <input type="text" id="username" name="username" required autocomplete="off" />
+
+      <label for="email">Email</label>
+      <input type="email" id="email" name="email" required autocomplete="off" />
+
+      <label for="zaloPhone">Số điện thoại Zalo</label>
+      <input type="text" id="zaloPhone" name="zaloPhone" autocomplete="off" />
+
+      <label for="currentRank">Rank hiện tại</label>
+      <input type="text" id="currentRank" name="currentRank" autocomplete="off" />
+
+      <label for="currentLevel">Lv. hiện tại</label>
+      <input type="number" id="currentLevel" name="currentLevel" min="0" autocomplete="off" />
+
+      <label for="password">Password</label>
+      <div class="password-container">
+        <input type="password" id="password" name="password" placeholder="Nhập mật khẩu" autocomplete="new-password" />
+        <span class="password-toggle" onclick="togglePasswordVisibility('password')">&#xe8f4;</span>
+      </div>
+
+      <label for="role">Role</label>
+      <select id="role" name="role" required>
+        <option value="player">Player</option>
+        <option value="admin">Admin</option>
+      </select>
+
+      <label for="vipExpiry">VIP Expiry Date</label>
+      <input type="date" id="vipExpiry" name="vipExpiry" />
+
+      <label>Trạng thái</label>
+      <div>
+        <label><input type="radio" name="status" value="active" checked /> Active</label>
+        <label class="ml-4"><input type="radio" name="status" value="inactive" /> Inactive</label>
+        <label class="ml-4"><input type="radio" name="status" value="banned" /> Banned</label>
+      </div>
+
+      <div class="btn-group">
+        <button type="button" class="cancel-btn" id="cancelUserBtn">Hủy</button>
+        <button type="submit" class="save-btn">Lưu</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal Xác nhận xóa -->
+<div id="deleteModalBackdrop" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="deleteModalTitle">
+  <div class="modal max-w-sm p-6">
+    <header id="deleteModalTitle" class="font-bold text-lg text-red-600 mb-4">Xác nhận xóa người dùng</header>
+    <p>Bạn có chắc muốn xóa người dùng này? Hành động không thể hoàn tác.</p>
+    <div class="btn-group mt-6">
+      <button class="cancel-btn" id="cancelDeleteBtn">Hủy</button>
+      <button class="save-btn bg-red-600 hover:bg-red-700" id="confirmDeleteBtn">Xóa</button>
     </div>
+  </div>
+</div>
 
+<!-- Toast Notification -->
+<div id="toast" role="alert" aria-live="assertive" aria-atomic="true"></div>
 
-    <!-- Add/Edit User Modal -->
-    <div id="userModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center overflow-auto py-4 px-2 hidden">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-2">
-            <div class="p-4 border-b flex justify-between items-center">
-                <h3 id="modalTitle" class="text-lg font-semibold">Add New User</h3>
-                <button id="closeModal" class="text-gray-500 hover:text-gray-700">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <form id="userForm" class="p-4 overflow-y-auto max-h-[80vh]">
-                <input type="hidden" id="userId">
-                <div class="mb-4">
-                    <label for="deviceId" class="block text-sm font-medium text-gray-700 mb-1">Device ID</label>
-                    <input type="text" id="deviceId" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                </div>
-                <div class="mb-4">
-                    <label for="firstName" class="block text-sm font-medium text-gray-700 mb-1">Tên</label>
-                    <input type="text" id="firstName" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
-                </div>
-                <div class="mb-4">
-                    <label for="lastName" class="block text-sm font-medium text-gray-700 mb-1">Họ tên</label>
-                    <input type="text" id="lastName" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
-                </div>
-                <div class="mb-4">
-                    <label for="username" class="block text-sm font-medium text-gray-700 mb-1">Username</label>
-                    <input type="text" id="username" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
-                </div>
-                <div class="mb-4">
-                    <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                    <input type="email" id="email" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
-                </div>
-                <div class="mb-4">
-                    <label for="zaloPhone" class="block text-sm font-medium text-gray-700 mb-1">Số điện thoại Zalo</label>
-                    <input type="tel" id="zaloPhone" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                </div>
-                <div class="mb-4">
-                    <label for="currentRank" class="block text-sm font-medium text-gray-700 mb-1">Rank hiện tại</label>
-                    <input type="text" id="currentRank" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                </div>
-                <div class="mb-4">
-                    <label for="currentLevel" class="block text-sm font-medium text-gray-700 mb-1">Lv. hiện tại</label>
-                    <input type="number" id="currentLevel" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                </div>
-                <div class="mb-4 password-field">
-                    <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
-                    <input type="password" id="password" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Current password (click eye to view)" required>
-                    <span class="toggle-password" onclick="togglePasswordVisibility('password')">
-                        <i class="fas fa-eye"></i>
-                    </span>
-                </div>
-                <div class="mb-4">
-                    <label for="role" class="block text-sm font-medium text-gray-700 mb-1">Role</label>
-                    <select id="role" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                        <option value="player">Player</option>
-                        <option value="admin">Admin</option>
-                    </select>
-                </div>
-                <div class="mb-4">
-                    <label for="vipExpiry" class="block text-sm font-medium text-gray-700 mb-1">VIP Account Expiry Date</label>
-                    <input type="date" id="vipExpiry" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                </div>
-                <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                    <div class="flex space-x-4">
-                        <label class="inline-flex items-center">
-                            <input type="radio" name="status" value="active" class="text-indigo-600" checked>
-                            <span class="ml-2">Active</span>
-                        </label>
-                        <label class="inline-flex items-center">
-                            <input type="radio" name="status" value="inactive" class="text-indigo-600">
-                            <span class="ml-2">Inactive</span>
-                        </label>
-                        <label class="inline-flex items-center">
-                            <input type="radio" name="status" value="banned" class="text-indigo-600">
-                            <span class="ml-2">Banned</span>
-                        </label>
-                    </div>
-                </div>
-                <div class="flex justify-end space-x-3 pt-4">
-                    <button type="button" id="cancelBtn" class="px-4 py-2 border rounded-lg hover:bg-gray-100">Cancel</button>
-                    <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Save</button>
-                </div>
-            </form>
+<script>
+  const apiBase = 'http://localhost:3000/api';
+  let users = [];
+  let currentPage = 1;
+  const itemsPerPage = 8;
+  let filteredUsers = [];
+
+  let userToDeleteId = null;
+
+  // Elements
+  const sidebar = document.getElementById('sidebar');
+  const header = document.getElementById('header');
+  const mainContent = document.getElementById('mainContent');
+  const toggleSidebarBtn = document.getElementById('toggleSidebarBtn');
+  const userTableBody = document.getElementById('userTableBody');
+  const addUserBtn = document.getElementById('addUserBtn');
+  const searchInput = document.getElementById('searchInput');
+  const prevPageBtn = document.getElementById('prevPageBtn');
+  const nextPageBtn = document.getElementById('nextPageBtn');
+  const userModalBackdrop = document.getElementById('userModalBackdrop');
+  const userForm = document.getElementById('userForm');
+  const closeUserModalBtn = document.getElementById('closeUserModalBtn');
+  const cancelUserBtn = document.getElementById('cancelUserBtn');
+  const deleteModalBackdrop = document.getElementById('deleteModalBackdrop');
+  const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
+  const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+  const toast = document.getElementById('toast');
+  const logoutBtn = document.getElementById('logoutBtn');
+  const adminUserInfo = document.getElementById('adminUserInfo');
+
+  // Toggle sidebar
+  toggleSidebarBtn.addEventListener('click', () => {
+    sidebar.classList.toggle('collapsed');
+    header.classList.toggle('collapsed');
+    mainContent.classList.toggle('collapsed');
+  });
+  toggleSidebarBtn.addEventListener('keypress', (e) => {
+    if(e.key === 'Enter' || e.key === ' ') toggleSidebarBtn.click();
+  });
+
+  // Show toast notifications
+  function showToast(message, duration = 3000) {
+    toast.textContent = message;
+    toast.classList.add('show');
+    setTimeout(() => {
+      toast.classList.remove('show');
+    }, duration);
+  }
+
+  // Password toggle
+  function togglePasswordVisibility(fieldId) {
+    const field = document.getElementById(fieldId);
+    const toggleSpan = field.nextElementSibling;
+    if (field.type === 'password') {
+      field.type = 'text';
+      toggleSpan.textContent = '\uE8F5'; // visibility_off
+    } else {
+      field.type = 'password';
+      toggleSpan.textContent = '\uE8F4'; // visibility
+    }
+  }
+
+  // Check admin login session
+  async function checkAdminLogin() {
+    try {
+      const res = await fetch(`${apiBase}/me`, { credentials: 'include' });
+      if (!res.ok) throw new Error('Chưa đăng nhập');
+      const data = await res.json();
+      if (!data.user || data.user.role !== 'admin') throw new Error('Không có quyền truy cập');
+      adminUserInfo.textContent = `Xin chào, ${data.user.username}`;
+      return true;
+    } catch {
+      // Create overlay
+      const overlay = document.createElement('div');
+      overlay.className = 'login-overlay';
+      overlay.innerHTML = `
+        <div style="text-align: center; color: white; padding: 20px;">
+          <h2 style="font-size: 24px; margin-bottom: 20px;">Bạn cần đăng nhập Admin để truy cập trang này</h2>
+          <p style="margin-bottom: 20px;">Đang chuyển hướng đến trang đăng nhập...</p>
         </div>
-    </div>
+      `;
+      document.body.appendChild(overlay);
+      
+      setTimeout(() => {
+        window.location.href = 'https://chauchicuong.github.io/CuongMechShop-signin/';
+      }, 2000);
+      return false;
+    }
+  }
 
-    <!-- Delete Confirmation Modal -->
-    <div id="deleteModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-md">
-            <div class="p-4 border-b">
-                <h3 class="text-lg font-semibold">Confirm Deletion</h3>
-            </div>
-            <div class="p-4">
-                <p>Are you sure you want to delete this user? This action cannot be undone.</p>
-            </div>
-            <div class="p-4 border-t flex justify-end space-x-3">
-                <button id="cancelDelete" class="px-4 py-2 border rounded-lg hover:bg-gray-100">Cancel</button>
-                <button id="confirmDelete" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">Delete</button>
-            </div>
-        </div>
-    </div>
+  // Load users from backend
+  async function loadUsers() {
+    try {
+      const res = await fetch(`${apiBase}/users`, { credentials: 'include' });
+      if (!res.ok) throw new Error('Không thể tải danh sách người dùng');
+      users = await res.json();
+      filteredUsers = [...users];
+      currentPage = 1;
+      renderUsers();
+    } catch (err) {
+      alert(err.message);
+    }
+  }
 
-    <script>
-        // DOM Elements
-        const sidebar = document.querySelector('.sidebar');
-        const sidebarToggle = document.getElementById('sidebarToggle');
-        const mobileSidebarToggle = document.getElementById('mobileSidebarToggle');
-        const userModal = document.getElementById('userModal');
-        const deleteModal = document.getElementById('deleteModal');
-        const addUserBtn = document.getElementById('addUserBtn');
-        const closeModal = document.getElementById('closeModal');
-        const cancelBtn = document.getElementById('cancelBtn');
-        const cancelDelete = document.getElementById('cancelDelete');
-        const confirmDelete = document.getElementById('confirmDelete');
-        const userForm = document.getElementById('userForm');
-        const userTableBody = document.getElementById('userTableBody');
-        const prevPageBtn = document.getElementById('prevPage');
-        const nextPageBtn = document.getElementById('nextPage');
-        const startItem = document.getElementById('startItem');
-        const endItem = document.getElementById('endItem');
-        const totalItems = document.getElementById('totalItems');
+  // Render users table with pagination and search filtering
+  function renderUsers() {
+    userTableBody.innerHTML = '';
+    if (filteredUsers.length === 0) {
+      userTableBody.innerHTML = `<tr><td colspan="9" class="p-6 text-center text-gray-400">Không có người dùng</td></tr>`;
+      prevPageBtn.disabled = true;
+      nextPageBtn.disabled = true;
+      return;
+    }
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = Math.min(startIndex + itemsPerPage, filteredUsers.length);
+    const pageUsers = filteredUsers.slice(startIndex, endIndex);
 
-        // State
-        let currentPage = 1;
-        const itemsPerPage = 5;
-        let users = [];
-        let userToDelete = null;
+    pageUsers.forEach(user => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="p-3 text-gray-600">${user.id}</td>
+        <td class="p-3">${user.deviceId || 'N/A'}</td>
+        <td class="p-3 text-center">
+          <input type="checkbox" ${user.vip ? 'checked' : ''} onchange="toggleVIP('${user.id}', this.checked)" aria-label="Toggle VIP status for ${user.username}" />
+        </td>
+        <td class="p-3 font-semibold">${(user.firstName || '') + ' ' + (user.lastName || '')}<br/><small class="text-gray-500">${user.username}</small></td>
+        <td class="p-3">${user.zaloPhone || 'N/A'}<br/><small class="text-gray-500">${user.currentRank || ''} (Lv. ${user.currentLevel || '0'})</small></td>
+        <td class="p-3">${user.email}</td>
+        <td class="p-3">
+          <span class="px-2 py-0.5 rounded-full text-xs ${user.role === 'admin' ? 'bg-purple-200 text-purple-800' : 'bg-green-200 text-green-800'}">${user.role}</span>
+        </td>
+        <td class="p-3">
+          <span class="px-2 py-0.5 rounded-full text-xs ${user.status === 'active' ? 'bg-green-200 text-green-800' : user.status === 'banned' ? 'bg-gray-300 text-gray-700' : 'bg-red-200 text-red-800'}">${user.status}</span>
+        </td>
+        <td class="p-3 text-center space-x-2">
+          <button class="action-btn edit" aria-label="Chỉnh sửa user ${user.username}" onclick="editUser('${user.id}')"><span class="material-icons">edit</span></button>
+          <button class="action-btn delete" aria-label="Xóa user ${user.username}" onclick="confirmDeleteUser('${user.id}')"><span class="material-icons">delete</span></button>
+        </td>
+      `;
+      userTableBody.appendChild(tr);
+    });
 
-        // Admin login state
-        let isAdminLoggedIn = false;
+    prevPageBtn.disabled = currentPage === 1;
+    nextPageBtn.disabled = currentPage * itemsPerPage >= filteredUsers.length;
+  }
 
-        // Initialize
-        document.addEventListener('DOMContentLoaded', () => {
-            loadUsers();
-            setupEventListeners();
-            
-            // Always reset login state on page load for security
-            isAdminLoggedIn = false;
-            localStorage.removeItem('adminLoggedIn');
-            updateAdminUI();
-        });
+  // Search input event
+  searchInput.addEventListener('input', () => {
+    const val = searchInput.value.toLowerCase().trim();
+    filteredUsers = users.filter(u =>
+      (u.firstName + ' ' + u.lastName).toLowerCase().includes(val) ||
+      (u.username && u.username.toLowerCase().includes(val)) ||
+      (u.email && u.email.toLowerCase().includes(val))
+    );
+    currentPage = 1;
+    renderUsers();
+  });
 
-        // Update UI based on login state
-        function updateAdminUI() {
-            const loginForm = document.getElementById('adminLoginForm');
-            const userManagementLink = document.querySelector('nav ul li:first-child a');
-            const addUserBtn = document.getElementById('addUserBtn');
-            
-            if (isAdminLoggedIn) {
-                addUserBtn.classList.remove('hidden');
-            } else {
-                addUserBtn.classList.add('hidden');
-            }
-            
-            if (isAdminLoggedIn) {
-                loginForm.innerHTML = `
-                    <div class="flex items-center space-x-3">
-                        <div class="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center">
-                            <i class="fas fa-user-shield"></i>
-                        </div>
-                        <div>
-                            <p class="font-medium">Admin</p>
-                            <p class="text-xs text-indigo-300">Super Admin</p>
-                        </div>
-                    </div>
-                    <button type="button" onclick="adminLogout()" class="w-full mt-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded text-sm font-medium">
-                        <i class="fas fa-sign-out-alt mr-2"></i> Logout
-                    </button>
-                `;
-                userManagementLink.classList.remove('hover:bg-indigo-700');
-                userManagementLink.classList.add('bg-indigo-900');
-            } else {
-                loginForm.innerHTML = `
-                    <div class="mb-3">
-                        <label class="block text-xs text-indigo-300 mb-1">Username</label>
-                        <input type="text" id="adminUsername" class="w-full px-3 py-2 text-sm rounded bg-indigo-800 text-white border border-indigo-700 focus:outline-none focus:ring-1 focus:ring-indigo-500" required>
-                    </div>
-                    <div class="mb-3 password-field">
-                        <label class="block text-xs text-indigo-300 mb-1">Password</label>
-                        <input type="password" id="adminPassword" class="w-full px-3 py-2 text-sm rounded bg-indigo-800 text-white border border-indigo-700 focus:outline-none focus:ring-1 focus:ring-indigo-500" required>
-                        <span class="toggle-password" onclick="togglePasswordVisibility('adminPassword')">
-                            <i class="fas fa-eye"></i>
-                        </span>
-                    </div>
-                    <button type="submit" class="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-sm font-medium">
-                        <i class="fas fa-sign-in-alt mr-2"></i> Login
-                    </button>
-                `;
-                userManagementLink.classList.remove('bg-indigo-900');
-                userManagementLink.classList.add('hover:bg-indigo-700');
-                document.getElementById('adminLoginForm').addEventListener('submit', handleAdminLogin);
-            }
-        }
+  prevPageBtn.addEventListener('click', () => {
+    if (currentPage > 1) {
+      currentPage--;
+      renderUsers();
+    }
+  });
+  nextPageBtn.addEventListener('click', () => {
+    if(currentPage * itemsPerPage < filteredUsers.length) {
+      currentPage++;
+      renderUsers();
+    }
+  });
 
-        // Admin login
-        function handleAdminLogin(e) {
-            e.preventDefault();
-            const username = document.getElementById('adminUsername').value;
-            const password = document.getElementById('adminPassword').value;
-            
-            // Check against stored admin users
-            const adminUser = users.find(user => 
-                user.username === username && 
-                user.password === password && 
-                user.role === 'admin'
-            );
-            
-            if (adminUser) {
-                isAdminLoggedIn = true;
-                // Set session storage instead of local storage for better security
-                sessionStorage.setItem('adminLoggedIn', 'true');
-                updateAdminUI();
-                loadUsers();
-            } else {
-                alert('Invalid admin credentials or insufficient privileges');
-            }
-        }
+  // Toggle VIP status
+  async function toggleVIP(id, checked) {
+    try {
+      const res = await fetch(`${apiBase}/users/${id}`, {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        credentials: 'include',
+        body: JSON.stringify({vip: checked})
+      });
+      if(!res.ok) throw new Error('Cập nhật VIP thất bại');
+      showToast('Cập nhật VIP thành công');
+      loadUsers();
+    } catch (err) {
+      alert(err.message);
+      loadUsers();
+    }
+  }
+  window.toggleVIP = toggleVIP;
 
-        // Admin logout
-        function adminLogout() {
-            isAdminLoggedIn = false;
-            localStorage.removeItem('adminLoggedIn');
-            sessionStorage.removeItem('adminLoggedIn');
-            updateAdminUI();
-            loadUsers();
-            
-            // Reset login form
-            document.getElementById('adminLoginForm').innerHTML = `
-                <div class="mb-3">
-                    <label class="block text-xs text-indigo-300 mb-1">Username</label>
-                    <input type="text" id="adminUsername" class="w-full px-3 py-2 text-sm rounded bg-indigo-800 text-white border border-indigo-700 focus:outline-none focus:ring-1 focus:ring-indigo-500" required>
-                </div>
-                <div class="mb-3 password-field">
-                    <label class="block text-xs text-indigo-300 mb-1">Password</label>
-                    <input type="password" id="adminPassword" class="w-full px-3 py-2 text-sm rounded bg-indigo-800 text-white border border-indigo-700 focus:outline-none focus:ring-1 focus:ring-indigo-500" required>
-                    <span class="toggle-password" onclick="togglePasswordVisibility('adminPassword')">
-                        <i class="fas fa-eye"></i>
-                    </span>
-                </div>
-                <button type="submit" class="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-sm font-medium">
-                    <i class="fas fa-sign-in-alt mr-2"></i> Login
-                </button>
-            `;
-            
-            // Reattach login event listener
-            document.getElementById('adminLoginForm').addEventListener('submit', handleAdminLogin);
-        }
+  // Show modal add new user
+  addUserBtn.addEventListener('click', () => {
+    openUserModal();
+  });
 
-        // Event Listeners
-        function setupEventListeners() {
-            // Admin login form
-            document.getElementById('adminLoginForm').addEventListener('submit', handleAdminLogin);
-            // Sidebar toggle
-            mobileSidebarToggle.addEventListener('click', () => {
-                sidebar.classList.add('active');
-            });
+  // Open user modal - thêm hoặc sửa
+  function openUserModal(user = null) {
+    userModalBackdrop.classList.add('active');
+    userForm.reset();
+    if (user) {
+      document.getElementById('modalTitle').textContent = 'Chỉnh sửa người dùng';
+      userForm.userId.value = user.id || '';
+      userForm.deviceId.value = user.deviceId || '';
+      userForm.firstName.value = user.firstName || '';
+      userForm.lastName.value = user.lastName || '';
+      userForm.username.value = user.username || '';
+      userForm.email.value = user.email || '';
+      userForm.zaloPhone.value = user.zaloPhone || '';
+      userForm.currentRank.value = user.currentRank || '';
+      userForm.currentLevel.value = user.currentLevel || '';
+      userForm.password.value = ''; // Không tự động hiển thị mật khẩu cũ
+      userForm.role.value = user.role || 'player';
+      userForm.status.value = user.status || 'active';
+      userForm.vipExpiry.value = user.vipExpiry || '';
+    } else {
+      document.getElementById('modalTitle').textContent = 'Thêm người dùng mới';
+      userForm.userId.value = '';
+    }
+  }
 
-            sidebarToggle.addEventListener('click', () => {
-                sidebar.classList.remove('active');
-            });
+  closeUserModalBtn.addEventListener('click', () => {
+    userModalBackdrop.classList.remove('active');
+  });
+  cancelUserBtn.addEventListener('click', () => {
+    userModalBackdrop.classList.remove('active');
+  });
 
-            // User modal
-            addUserBtn.addEventListener('click', () => {
-                document.getElementById('modalTitle').textContent = 'Add New User';
-                document.getElementById('userId').value = '';
-                userForm.reset();
-                userModal.classList.remove('hidden');
-            });
+  // Gửi form thêm/sửa user
+  userForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const userId = userForm.userId.value.trim();
+    const payload = {
+      deviceId: userForm.deviceId.value.trim(),
+      firstName: userForm.firstName.value.trim(),
+      lastName: userForm.lastName.value.trim(),
+      username: userForm.username.value.trim(),
+      email: userForm.email.value.trim(),
+      zaloPhone: userForm.zaloPhone.value.trim(),
+      currentRank: userForm.currentRank.value.trim(),
+      currentLevel: userForm.currentLevel.value.trim(),
+      password: userForm.password.value,
+      role: userForm.role.value,
+      status: userForm.status.value,
+      vipExpiry: userForm.vipExpiry.value
+    };
+    // Validate minimal
+    if (!payload.username || !payload.email) {
+      alert('Username và Email là bắt buộc');
+      return;
+    }
 
-            closeModal.addEventListener('click', () => {
-                userModal.classList.add('hidden');
-            });
+    try {
+      const res = await fetch(`${apiBase}/users${userId ? '/' + userId : ''}`, {
+        method: userId ? 'PUT' : 'POST',
+        credentials: 'include',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || 'Lỗi lưu dữ liệu');
+      }
+      userModalBackdrop.classList.remove('active');
+      showToast(`Người dùng đã được ${userId ? 'cập nhật' : 'thêm'} thành công`);
+      loadUsers();
+    } catch (err) {
+      alert(err.message);
+    }
+  });
 
-            cancelBtn.addEventListener('click', () => {
-                userModal.classList.add('hidden');
-            });
+  // Sửa người dùng
+  function editUser(id) {
+    const user = users.find(u => u.id === id);
+    if (!user) {
+      alert('Người dùng không tồn tại');
+      return;
+    }
+    openUserModal(user);
+  }
+  window.editUser = editUser;
 
-            // Delete modal
-            cancelDelete.addEventListener('click', () => {
-                deleteModal.classList.add('hidden');
-            });
+  // Xác nhận xóa người dùng
+  function confirmDeleteUser(id) {
+    userToDeleteId = id;
+    deleteModalBackdrop.classList.add('active');
+  }
+  window.confirmDeleteUser = confirmDeleteUser;
 
-            confirmDelete.addEventListener('click', () => {
-                if (userToDelete) {
-                    deleteUser(userToDelete);
-                    deleteModal.classList.add('hidden');
-                    userToDelete = null;
-                }
-            });
+  // Hủy xóa
+  cancelDeleteBtn.addEventListener('click', () => {
+    deleteModalBackdrop.classList.remove('active');
+    userToDeleteId = null;
+  });
 
-            // Form submission
-            userForm.addEventListener('submit', (e) => {
-                e.preventDefault();
-                saveUser();
-            });
+  // Xác nhận xóa
+  confirmDeleteBtn.addEventListener('click', async () => {
+    if (!userToDeleteId) return;
+    try {
+      const res = await fetch(`${apiBase}/users/${userToDeleteId}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+      if (!res.ok) throw new Error('Xóa thất bại');
+      showToast('Người dùng đã bị xóa');
+      deleteModalBackdrop.classList.remove('active');
+      loadUsers();
+      userToDeleteId = null;
+    } catch (err) {
+      alert(err.message);
+    }
+  });
 
-            // Pagination
-            prevPageBtn.addEventListener('click', () => {
-                if (currentPage > 1) {
-                    currentPage--;
-                    renderUsers();
-                }
-            });
+  // Logout admin
+  logoutBtn.addEventListener('click', async () => {
+    if (!confirm('Bạn chắc chắn muốn đăng xuất?')) return;
+    try {
+      const res = await fetch(`${apiBase}/logout`, {
+        method: 'POST',
+        credentials: 'include'
+      });
+      if (!res.ok) throw new Error('Đăng xuất thất bại');
+      window.location.href = '/admin-login.html';
+    } catch (err) {
+      alert('Lỗi đăng xuất: ' + err.message);
+    }
+  });
 
-            nextPageBtn.addEventListener('click', () => {
-                const totalPages = Math.ceil(users.length / itemsPerPage);
-                if (currentPage < totalPages) {
-                    currentPage++;
-                    renderUsers();
-                }
-            });
-        }
-
-        // Toggle password visibility
-        function togglePasswordVisibility(fieldId) {
-            const field = document.getElementById(fieldId);
-            const icon = document.querySelector(`#${fieldId} + .toggle-password i`);
-            
-            if (field.type === 'password') {
-                field.type = 'text';
-                icon.classList.remove('fa-eye');
-                icon.classList.add('fa-eye-slash');
-            } else {
-                field.type = 'password';
-                icon.classList.remove('fa-eye-slash');
-                icon.classList.add('fa-eye');
-            }
-        }
-
-        // Load users from localStorage
-        function loadUsers() {
-            const storedUsers = localStorage.getItem('admin_users');
-            if (storedUsers) {
-                users = JSON.parse(storedUsers);
-            } else {
-                users = [];
-                saveUsersToStorage();
-            }
-            
-            // Ensure admin users exist
-            if (!users.some(u => u.role === 'admin')) {
-                users.push({
-                    id: generateId(),
-                    username: 'admin',
-                    password: 'admin123',
-                    role: 'admin',
-                    status: 'active',
-                    vip: true
-                });
-                saveUsersToStorage();
-            }
-            renderUsers();
-        }
-
-        // Save users to localStorage
-        function saveUsersToStorage() {
-            localStorage.setItem('admin_users', JSON.stringify(users));
-        }
-
-        // Generate unique ID
-        function generateId() {
-            return Date.now().toString(36) + Math.random().toString(36).substr(2);
-        }
-
-        // Render users in table
-        function renderUsers() {
-            userTableBody.innerHTML = '';
-            
-            // Check VIP expiry dates
-            const today = new Date().toISOString().split('T')[0];
-            users.forEach(user => {
-                if (user.vipExpiry && user.vipExpiry <= today) {
-                    user.vip = false;
-                }
-            });
-            saveUsersToStorage();
-            
-            const startIndex = (currentPage - 1) * itemsPerPage;
-            const endIndex = Math.min(startIndex + itemsPerPage, users.length);
-            const paginatedUsers = users.slice(startIndex, endIndex);
-            
-            if (paginatedUsers.length === 0) {
-                userTableBody.innerHTML = `
-                    <tr>
-                        <td colspan="7" class="px-6 py-4 text-center text-gray-500">No users found</td>
-                    </tr>
-                `;
-            } else {
-                paginatedUsers.forEach(user => {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${user.id.substring(0, 8)}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${user.deviceId || 'N/A'}</td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <label class="relative inline-flex items-center ${isAdminLoggedIn ? 'cursor-pointer' : 'cursor-not-allowed'}">
-                                <input type="checkbox" ${user.vip ? 'checked' : ''} ${isAdminLoggedIn ? '' : 'disabled'} class="sr-only peer" ${isAdminLoggedIn ? `onclick="toggleVIP('${user.id}', this.checked)"` : ''}>
-                                <div class="w-11 h-6 ${isAdminLoggedIn ? 'bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300' : 'bg-gray-100'} rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-500"></div>
-                            </label>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm font-medium text-gray-900">${user.firstName || ''} ${user.lastName || ''}</div>
-                            <div class="text-sm text-gray-500">${user.username}</div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm text-gray-900">${user.zaloPhone || 'N/A'}</div>
-                            <div class="text-sm text-gray-500">${user.currentRank || 'N/A'} (Lv. ${user.currentLevel || '0'})</div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${user.email}</td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                ${user.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-green-100 text-green-800'}">
-                                ${user.role === 'player' ? 'Player' : user.role}
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                ${user.status === 'active' ? 'bg-green-100 text-green-800' : 
-                                  user.status === 'banned' ? 'bg-gray-100 text-gray-800' : 'bg-red-100 text-red-800'}">
-                                ${user.status}
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            ${isAdminLoggedIn ? `
-                                <button onclick="editUser('${user.id}')" class="text-indigo-600 hover:text-indigo-900 mr-3">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button onclick="confirmDeleteUser('${user.id}')" class="text-red-600 hover:text-red-900">
-                                    <i class="fas fa-trash-alt"></i>
-                                </button>
-                            ` : ''}
-                        </td>
-                    `;
-                    userTableBody.appendChild(row);
-                });
-            }
-            
-            // Update pagination info
-            startItem.textContent = startIndex + 1;
-            endItem.textContent = endIndex;
-            totalItems.textContent = users.length;
-            
-            // Enable/disable pagination buttons
-            prevPageBtn.disabled = currentPage === 1;
-            nextPageBtn.disabled = currentPage === Math.ceil(users.length / itemsPerPage);
-        }
-
-        // Save user (add or edit)
-        function saveUser() {
-            const userId = document.getElementById('userId').value;
-            const deviceId = document.getElementById('deviceId').value;
-            const firstName = document.getElementById('firstName').value;
-            const lastName = document.getElementById('lastName').value;
-            const username = document.getElementById('username').value;
-            const email = document.getElementById('email').value;
-            const zaloPhone = document.getElementById('zaloPhone').value;
-            const currentRank = document.getElementById('currentRank').value;
-            const currentLevel = document.getElementById('currentLevel').value;
-            const password = document.getElementById('password').value;
-            const role = document.getElementById('role').value;
-            const status = document.querySelector('input[name="status"]:checked').value;
-            const vipExpiry = document.getElementById('vipExpiry').value;
-            
-            if (userId) {
-                // Edit existing user
-                const index = users.findIndex(u => u.id === userId);
-                if (index !== -1) {
-                    users[index] = {
-                        ...users[index],
-                        deviceId,
-                        firstName,
-                        lastName,
-                        username,
-                        email,
-                        zaloPhone,
-                        currentRank,
-                        currentLevel,
-                        password: password !== users[index].password ? password : users[index].password,
-                        role,
-                        status,
-                        vipExpiry
-                    };
-                }
-            } else {
-                // Add new user
-                const newUser = {
-                    id: generateId(),
-                    deviceId,
-                    username,
-                    email,
-                    password,
-                    role,
-                    status
-                };
-                users.push(newUser);
-            }
-            
-            saveUsersToStorage();
-            userModal.classList.add('hidden');
-            renderUsers();
-        }
-
-        // Edit user
-        function editUser(id) {
-            const user = users.find(u => u.id === id);
-            if (user) {
-                // Close sidebar on mobile
-                sidebar.classList.remove('active');
-                document.getElementById('modalTitle').textContent = 'Edit User';
-                document.getElementById('userId').value = user.id;
-                document.getElementById('deviceId').value = user.deviceId || '';
-                document.getElementById('firstName').value = user.firstName || '';
-                document.getElementById('lastName').value = user.lastName || '';
-                document.getElementById('username').value = user.username;
-                document.getElementById('email').value = user.email;
-                document.getElementById('zaloPhone').value = user.zaloPhone || '';
-                document.getElementById('currentRank').value = user.currentRank || '';
-                document.getElementById('currentLevel').value = user.currentLevel || '';
-                document.getElementById('password').value = user.password;
-                document.getElementById('password').type = 'password'; // Ensure it's masked by default
-                document.getElementById('role').value = user.role;
-                document.querySelector(`input[name="status"][value="${user.status}"]`).checked = true;
-                document.getElementById('vipExpiry').value = user.vipExpiry || '';
-                userModal.classList.remove('hidden');
-            }
-        }
-
-        // Confirm delete user
-        function confirmDeleteUser(id) {
-            // Close sidebar on mobile
-            sidebar.classList.remove('active');
-            userToDelete = id;
-            deleteModal.classList.remove('hidden');
-        }
-
-        // Toggle VIP status
-        function toggleVIP(id, isVIP) {
-            const user = users.find(u => u.id === id);
-            if (user) {
-                user.vip = isVIP;
-                if (!isVIP) {
-                    user.vipExpiry = '';
-                } else if (!user.vipExpiry) {
-                    // Set default expiry 30 days from now if none exists
-                    const expiryDate = new Date();
-                    expiryDate.setDate(expiryDate.getDate() + 30);
-                    user.vipExpiry = expiryDate.toISOString().split('T')[0];
-                }
-                saveUsersToStorage();
-                renderUsers();
-            }
-        }
-
-        // Delete user
-        function deleteUser(id) {
-            users = users.filter(u => u.id !== id);
-            saveUsersToStorage();
-            renderUsers();
-        }
-    </script>
-
-
+  // Khởi tạo
+  (async () => {
+    if(await checkAdminLogin()) {
+      loadUsers();
+    }
+  })();
+</script>
 </body>
 </html>
+
