@@ -626,11 +626,17 @@
                     users[index] = {
                         ...users[index],
                         deviceId,
+                        firstName,
+                        lastName,
                         username,
                         email,
-                        password: password !== user.password ? password : users[index].password,
+                        zaloPhone,
+                        currentRank,
+                        currentLevel,
+                        password: password !== users[index].password ? password : users[index].password,
                         role,
-                        status
+                        status,
+                        vipExpiry
                     };
                 }
             } else {
